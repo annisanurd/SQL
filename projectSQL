@@ -77,3 +77,144 @@ order_item = olist_order_items_dataset
 order = olist_order_dataset
 payments = olist_order_payments_dataset
 cust = olist_order_customer_dataset
+
+products = pd.merge(product, product_category_name_translation, on='product_category_name',how='left')
+
+products.info()
+
+products[['product_category_name','product_category_name_english']][(products['product_category_name'].notnull()) & (products['product_category_name_english'].isnull())]
+
+products.loc[products['product_category_name']=='pc_gamer','product_category_name_english'] = products.loc[products['product_category_name']=='pc_gamer','product_category_name_english'].fillna('pc_game')
+products.loc[products['product_category_name']=='portateis_cozinha_e_preparadores_de_alimentos','product_category_name_english'] = products.loc[products['product_category_name']=='portateis_cozinha_e_preparadores_de_alimentos','product_category_name_english'].fillna('portable_kitchen_food_preparers')
+
+products[products['product_category_name_english']=='pc_game']
+
+products.info()
+
+# Tabel Produk: Handling Missing Value
+products.isna().sum()
+
+products = products.dropna()
+products.isna().sum()
+
+products.head()
+
+products = products.rename(columns={'product_category_name': 'product_category_name_portuguese'})
+products = products.rename(columns={'product_category_name_english': 'product_category_name'})
+
+products.head()
+#Tabel Produk: Identifikasi Inconsistent Format
+pd.DataFrame(products['product_category_name'].value_counts()).head(73).reset_index().sort_values(by='index')
+
+#Tabel Item: Identifikasi Missing Value
+order_item.isna().sum()
+
+#Tabel Item: Identifikasi Inconsistent Format
+order_item.info()
+
+#Tabel Item: Identifikasi Data Duplicate
+order_item.duplicated().any()
+
+#Tabel Order: Identifikasi Inconsistent Format
+order.nunique()
+
+order['order_status'].unique()
+
+order.duplicated().any()
+
+#Tabel Order: Identifikasi Missing Value
+order.isna().sum()
+
+order[order.order_status != 'delivered'].count()
+
+order = order.dropna()
+order = order[order['order_status']=='delivered']
+order.nunique()
+
+#Tabel Order: Dates Data
+order.info()
+
+order[['order_purchase_timestamp',
+      'order_approved_at',
+      'order_delivered_carrier_date',
+      'order_delivered_customer_date',
+      'order_estimated_delivery_date']] = order[['order_purchase_timestamp',
+                                                'order_approved_at',
+                                                'order_delivered_carrier_date',
+                                                'order_delivered_customer_date',
+                                                'order_estimated_delivery_date']].apply(pd.to_datetime)
+order.info()
+
+order = order[['order_id','customer_id','order_delivered_customer_date']]
+order
+
+#Tabel Payment: Identifikasi Missing Value
+payments.isna().sum()
+
+#Tabel Payment: Identifikasi Inconsistent Format
+payments.nunique()
+
+payments['payment_sequential'].unique()
+
+payments['payment_type'].unique()
+payments['payment_installments'].unique()
+
+#Tabel Payment: Identifikasi Data Duplicated
+payments.duplicated().any()
+
+payments.info()
+
+#Tabel Customer: Identifikasi Missing Value
+cust.isna().sum()
+
+Tabel Customer: Identifikasi Inconsistent Format
+customer.nunique()
+
+customer['customer_city'].unique().tolist()
+
+#Tabel Customer: Identifikasi Data Duplicated
+cust.duplicated().any()
+
+cust.nunique()
+
+cust['customers_uniq_id'].duplicated().any()
+
+
+Analisis
+Objective 1: Perusahaan ingin mengetahui 5 Produk yang paling diminati/paling banyak diorder.
+Kita bisa menghitung jumlah kemunculan product_id pada tabel order_items
+
+most_item = order_item
+most_item = pd.DataFrame(most_item['product_id'].value_counts())
+most_item = most_item.nlargest(5,'product_id').reset_index()
+most_item
+
+most_item = most_item.rename(columns={'product_id': 'product_id_count'})
+most_item = most_item.rename(columns={'index': 'product_id'})
+
+most_item = pd.merge(most_item,products,on='product_id',how='left')
+
+most_item = most_item[['product_id','product_id_count','product_category_name']]
+
+sns.barplot(data=most_item,x='product_id_count', y='product_id')
+for index, row in most_item.iterrows():
+    plt.annotate(row['product_id_count'], xy=(row['product_id_count'],row.name), ha='center', va='bottom')
+    plt.annotate(row['product_category_name'], xy=(row['product_id_count'],row.name), ha='center', va='top')
+plt.show()
+
+# Objective 2: Perusahaan ingin melihat total penjualan dari tiap kategori product
+# Kita bisa melihat total penjualan tiap kategori dengan menjumlahkan nilai terjual pada tabel order item dan mencocokkan kategori produk di tabel products
+case2 = pd.merge(order_item,products,on='product_id',how='left')
+case2 = pd.DataFrame(case2.groupby('product_category_name')['price'].sum().sort_values(ascending=False)).reset_index()
+
+case2 = case2.rename(columns={'price': 'total_price'})
+
+case2 = case2.nlargest(10,'total_price')
+
+sns.barplot(data=case2,y='product_category_name', x='total_price')
+for index, row in case2.iterrows():
+    plt.annotate(row['total_price'], xy=(row['total_price'],row.name), ha='center', va='bottom')
+plt.show()
+
+
+
