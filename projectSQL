@@ -5,3 +5,75 @@ import matplotlib.pyplot as plt
 import numpy as np
 pd.set_option('display.max_columns',None)
 
+def get_result(query):
+    conn = sqlite3.connect('olist.db')
+    cursor = conn.cursor()
+    cursor.execute(query)
+    data = cursor.fetchall()
+    conn.close()
+    return data
+
+def create_df(data, columns):
+    return pd.DataFrame(data = data, columns = columns).drop(['index'], axis =1)
+
+olist_order_payments_dataset = create_df(get_result('select * from olist_order_payments_dataset'),
+                                         ['index',
+                                          'order_id',
+                                          'payment_sequential',
+                                          'payment_type',
+                                          'payment_installments',
+                                          'payment_value'
+                                         ])
+olist_order_dataset = create_df(get_result('select * from olist_order_dataset'),
+                                ['index',
+                                 'order_id',
+                                 'customer_id',
+                                 'order_status',
+                                 'order_purchase_timestamp',
+                                 'order_approved_at',
+                                 'order_delivered_carrier_date',
+                                 'order_delivered_customer_date',
+                                 'order_estimated_delivery_date'
+                                ])
+
+olist_order_customer_dataset = create_df(get_result('select * from olist_order_customer_dataset'),
+                                         ['index',
+                                          'customers_id',
+                                          'customers_uniq_id',
+                                          'customer_zip_code_prefix',
+                                          'customer_city',
+                                          'customer_state'
+                                         ])
+olist_order_items_dataset = create_df(get_result('select * from olist_order_items_dataset'),
+                                      ['index',
+                                       'order_id',
+                                       'order_item_id',
+                                       'product_id',
+                                       'seller_id',
+                                       'shipping_limit_date',
+                                       'price',
+                                       'freight_value'
+                                      ])
+olist_products_dataset = create_df(get_result('select * from olist_products_dataset'),
+                                   ['index',
+                                    'product_id',
+                                    'product_category_name',
+                                    'product_name_length',
+                                    'product_description_length',
+                                    'product_photos_qty',
+                                    'product_weight_g',
+                                    'product_length_cm',
+                                    'product_height_cm',
+                                    'product_width_cm'
+                                   ])
+product_category_name_translation = create_df(get_result('select * from product_category_name_translation'),
+                                             ['index',
+                                              'product_category_name',
+                                              'product_category_name_english'
+                                             ])
+
+product = olist_products_dataset
+order_item = olist_order_items_dataset
+order = olist_order_dataset
+payments = olist_order_payments_dataset
+cust = olist_order_customer_dataset
